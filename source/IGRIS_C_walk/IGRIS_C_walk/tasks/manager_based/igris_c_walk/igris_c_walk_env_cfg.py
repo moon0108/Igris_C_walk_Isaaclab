@@ -456,24 +456,20 @@ class RewardsCfg:
 
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=8,  # G1(1.0)보다 약간만 높게
+        weight=5, 
         params={"command_name": "base_velocity", "std": 0.5},
     )
 
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_world_exp,
-        weight=2.0,  # G1과 동일
+        weight=5.0,  
         params={"command_name": "base_velocity", "std": 0.5}
     )
-
-    # ========================================================================
-    # 3. Gait Quality (보행 패턴) - G1 철학: 힌트만
-    # ========================================================================
 
     # 3-1. 교대 보행 (G1보다 약간 강조)
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=2,  # 🔥 G1(0.25)의 2배 - IGRIS_C는 좀 더 장려 필요
+        weight=1,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link_Ankle_Roll_(Left|Right)"),
@@ -484,7 +480,7 @@ class RewardsCfg:
     # 3-2. 착지 안정성
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-0.5,  # G1(-0.1)보다 2배 - 무거워서 미끄러지면 위험
+        weight=-0.3,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link_Ankle_Roll_(Left|Right)"),
             "asset_cfg": SceneEntityCfg("robot", body_names="Link_Ankle_Roll_(Left|Right)"),
@@ -495,60 +491,24 @@ class RewardsCfg:
     # 4. Joint Control Strategy (하드웨어 특성 반영!)
     # ========================================================================
 
-    # 4-1. Hip Yaw/Roll: 외회전 방지 (적당한 제약)
-    joint_deviation_hip_yaw_roll = RewTerm(
-        func=mdp.joint_deviation_l1,
-        weight=-0.5,  # G1(-0.1)의 3배 - 큰 로봇이니 조금 더 제약
-        params={
-            "asset_cfg": SceneEntityCfg(
-                "robot",
-                joint_names=["Joint_Hip_Yaw_(Left|Right)", "Joint_Hip_Roll_(Left|Right)"]
-            )
-        },
-    )
 
 
-    # 4-2. Hip Pitch 사용 장려 (발목 약함 보상!)
-    # hip_pitch_motion = RewTerm(
-    #     func=mdp.joint_vel_l2,
-    #     weight=0.15,  # 🔥 핵심! 발목 약하니 Hip Pitch 필수
+
+
+    # ankle_torque_penalty = RewTerm(
+    #     func=mdp.joint_torques_l2,
+    #     weight=-5e-6,
     #     params={
     #         "asset_cfg": SceneEntityCfg(
     #             "robot",
-    #             joint_names=["Joint_Hip_Pitch_(Left|Right)"]
+    #             joint_names=["Joint_Ankle_Pitch_(Left|Right)", "Joint_Ankle_Roll_(Left|Right)"]
     #         )
     #     },
     # )
 
-    # # 4-3. Knee 사용 장려
-    # knee_motion = RewTerm(
-    #     func=mdp.joint_vel_l2,
-    #     weight=0.1,  # 🔥 무릎도 적극 사용
-    #     params={
-    #         "asset_cfg": SceneEntityCfg(
-    #             "robot",
-    #             joint_names=["Joint_Knee_Pitch_(Left|Right)"]
-    #         )
-    #     },
-    # )
-
-    # 4-4. 발목 과다 사용 억제 (하드웨어 보호!)
-    # Ankle은 kp=2.5~71로 매우 약함 → 절대 과부하 방지
-    ankle_torque_penalty = RewTerm(
-        func=mdp.joint_torques_l2,
-        weight=-5e-6,
-        params={
-            "asset_cfg": SceneEntityCfg(
-                "robot",
-                joint_names=["Joint_Ankle_Pitch_(Left|Right)", "Joint_Ankle_Roll_(Left|Right)"]
-            )
-        },
-    )
-
-    # 4-5. 발목 관절 한계 (약한 제약)
-    dof_pos_limits = RewTerm(
+    dof_pos_limits_ankle = RewTerm(
         func=mdp.joint_pos_limits,
-        weight=-0.5,  # G1(-1.0)보다 약함 (토크로 이미 제한)
+        weight=-1.0,  
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -557,10 +517,10 @@ class RewardsCfg:
         },
     )
 
-    # 4-6. 발목 평평하게 유지 (완전 착지!)
+    # 4-6. 발목 평평하게 유지
     ankle_orientation_flat = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.4,  # 🔥 큰 로봇은 flat foot 필수
+        weight=-0.5,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -569,64 +529,87 @@ class RewardsCfg:
         },
     )
 
-    # ========================================================================
-    # 5. Posture & Stability (큰 로봇 = 안정성 최우선)
-    # ========================================================================
+
+    # Hip Yaw/Roll: 외회전 방지
+    joint_deviation_hip_yaw_roll = RewTerm(
+        func=mdp.joint_deviation_l1,
+        weight=-0.5,  
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=["Joint_Hip_Yaw_(Left|Right)", "Joint_Hip_Roll_(Left|Right)"]
+            )
+        },
+    )
+    
+    #pitch 방향 과도하게 금지
+    joint_deviation_hip_pitch_knee = RewTerm(
+        func=mdp.joint_deviation_l1,
+        weight=-0.1,
+        params={
+            "asset_cfg": SceneEntityCfg(
+                "robot",
+                joint_names=[
+                    "Joint_Hip_Pitch_Left",
+                    "Joint_Knee_Pitch_Left",
+                    "Joint_Hip_Pitch_Right",
+                    "Joint_Knee_Pitch_Right",
+                ],
+            ),
+        },
+    )
 
     # 5-1. 자세 안정성 - G1보다 2.5배 강함
     flat_orientation_l2 = RewTerm(
         func=mdp.flat_orientation_l2,
-        weight=-3.0,  # 🔥 G1(-1.0)의 2.5배 - 무겁고 커서 중요!
+        weight=-2.0,  # 🔥 G1(-1.0)의 2.5배 - 무겁고 커서 중요!
     )
-
-    # ========================================================================
-    # 6. Smoothness (큰 로봇 = 관성 큼)
-    # ========================================================================
 
     # 6-1. Action rate (급격한 변화 억제)
     action_rate_l2 = RewTerm(
         func=mdp.action_rate_l2,
-        weight=-0.02,  # G1(-0.005)의 2배 - 관성 고려
+        weight=-0.05,  # G1(-0.005)의 2배 - 관성 고려
     )
 
     # 6-2. Joint acceleration
     joint_acc_l2 = RewTerm(
         func=mdp.joint_acc_l2,
-        weight=-1e-5,  # G1(-1.25e-7)의 2배
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=LEG_JOINTS)},
+        weight=-1e-7,  # G1(-1.25e-7)의 2배
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[
+                                                                "Joint_Waist_Pitch",
+                                                                "Joint_Hip_Yaw_Left",
+                                                                "Joint_Hip_Roll_Left",
+                                                                "Joint_Hip_Pitch_Left",
+                                                                "Joint_Knee_Pitch_Left",
+                                                                "Joint_Hip_Yaw_Right",
+                                                                "Joint_Hip_Roll_Right",
+                                                                "Joint_Hip_Pitch_Right",
+                                                                "Joint_Knee_Pitch_Right",]
+                                                        )},
     )
 
-    # 6-3. Hip/Knee 토크 smoothness
     dof_torques_l2 = RewTerm(
         func=mdp.joint_torques_l2,
         weight=-1e-5,  # G1(-1.5e-7)의 2배
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
-                joint_names=[
-                    "Joint_Hip_Pitch_(Left|Right)",
-                    "Joint_Hip_Roll_(Left|Right)",
-                    "Joint_Knee_Pitch_(Left|Right)"
-                ]
+                joint_names=LEG_JOINTS
             )
         },
     )
-    # hip_pitch_velocity_limit = RewTerm(
-    #     func=mdp.joint_vel_l2,
-    #     weight=-0.05,  # 🔥 새 항목 (직접적!)
-    #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=["Joint_Hip_Pitch_(Left|Right)"])}
-    # )
-    # knee_pitch_velocity_limit = RewTerm(
-    #     func=mdp.joint_vel_l2,
-    #     weight=-0.02,  # 🔥 새 항목 (직접적!)
-    #     params={"asset_cfg": SceneEntityCfg("robot", joint_names=["Joint_Knee_Pitch_(Left|Right)"])}
-    # )
 
-    # base_height = RewTerm(
-    #     func=mdp.base_height_l2,
-    #     weight=-2,
-    #     params={"target_height": 0.75, "asset_cfg": SceneEntityCfg("robot")},
-    # )
+
+
+
+    foot_impact_penalty = RewTerm(
+        func=mdp.contact_forces,
+        weight=-1.5e-3,
+        params={
+            "threshold": 500.0,
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FOOT_ROLL_LINKS),
+        },
+    )
 
 
 
