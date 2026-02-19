@@ -42,9 +42,6 @@ from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
 
 
 LEG_JOINTS = [
-    #"Joint_Waist_Yaw",
-    #"Joint_Waist_Roll",
-    "Joint_Waist_Pitch",
     "Joint_Hip_Yaw_Left",
     "Joint_Hip_Roll_Left",
     "Joint_Hip_Pitch_Left",
@@ -456,20 +453,20 @@ class RewardsCfg:
 
     track_lin_vel_xy_exp = RewTerm(
         func=mdp.track_lin_vel_xy_yaw_frame_exp,
-        weight=5, 
+        weight=8, 
         params={"command_name": "base_velocity", "std": 0.5},
     )
 
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_world_exp,
-        weight=5.0,  
+        weight=8.0,  
         params={"command_name": "base_velocity", "std": 0.5}
     )
 
     # 3-1. 교대 보행 (G1보다 약간 강조)
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=1,
+        weight=0.7,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names="Link_Ankle_Roll_(Left|Right)"),
@@ -545,7 +542,7 @@ class RewardsCfg:
     #pitch 방향 과도하게 금지
     joint_deviation_hip_pitch_knee = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
+        weight=-0.01,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -576,7 +573,6 @@ class RewardsCfg:
         func=mdp.joint_acc_l2,
         weight=-1e-7,  # G1(-1.25e-7)의 2배
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[
-                                                                "Joint_Waist_Pitch",
                                                                 "Joint_Hip_Yaw_Left",
                                                                 "Joint_Hip_Roll_Left",
                                                                 "Joint_Hip_Pitch_Left",
@@ -585,7 +581,7 @@ class RewardsCfg:
                                                                 "Joint_Hip_Roll_Right",
                                                                 "Joint_Hip_Pitch_Right",
                                                                 "Joint_Knee_Pitch_Right",]
-                                                        )},
+        )},
     )
 
     dof_torques_l2 = RewTerm(
@@ -604,9 +600,9 @@ class RewardsCfg:
 
     foot_impact_penalty = RewTerm(
         func=mdp.contact_forces,
-        weight=-1.5e-3,
+        weight=-1.5e-5,
         params={
-            "threshold": 500.0,
+            "threshold": 800.0,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=FOOT_ROLL_LINKS),
         },
     )

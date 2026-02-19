@@ -9,6 +9,13 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets.articulation import ArticulationCfg
 from isaaclab.actuators import DelayedPDActuatorCfg
 
+
+try:
+    from isaaclab.actuators import ImplicitActuatorCfg
+except Exception:
+    from isaaclab.actuators.actuator_cfg import ImplicitActuatorCfg
+
+
 # -----------------------------------------------------------------------------
 # Asset
 # -----------------------------------------------------------------------------
@@ -63,10 +70,10 @@ _JOINT_META = {
         "kp": 500.0, "kd": 40, "torque": 400.0, "vmax": 10000.0, "arm": armma,
     },
     "Joint_Ankle_Pitch_Left": {
-        "kp": 100.0, "kd": 2, "torque": 50.0, "vmax": 10000.0, "arm": armma,
+        "kp": 50.0, "kd": 2, "torque": 40.0, "vmax": 10000.0, "arm": armma,
     },
     "Joint_Ankle_Roll_Left": {
-        "kp": 100.0, "kd": 2, "torque": 50.0, "vmax": 10000.0, "arm": armma,
+        "kp": 50.0, "kd": 2, "torque": 40.0, "vmax": 10000.0, "arm": armma,
     },
 
     # ────────────── RIGHT LEG ──────────────
@@ -83,10 +90,10 @@ _JOINT_META = {
         "kp": 500.0, "kd": 40, "torque": 400.0, "vmax": 10000.0, "arm": armma,
     },
     "Joint_Ankle_Pitch_Right": {
-        "kp": 100.0, "kd": 2, "torque": 50.0, "vmax": 10000.0, "arm": armma,
+        "kp": 50.0, "kd": 2, "torque": 40.0, "vmax": 10000.0, "arm": armma,
     },
     "Joint_Ankle_Roll_Right": {
-        "kp": 100.0, "kd": 2, "torque": 50.0, "vmax": 10000.0, "arm": armma,
+        "kp": 50.0, "kd": 2, "torque": 40.0, "vmax": 10000.0, "arm": armma,
     },
 }
 KP_SCALE = 1.0
@@ -98,15 +105,15 @@ TORQUE_SCALE = 1.0
 # max_delay=4 => up to 80ms delay (4 * 20ms). Tune as needed.
 # -----------------------------------------------------------------------------
 _ACTUATORS = {
-    jn: DelayedPDActuatorCfg(
+    jn: ImplicitActuatorCfg(
         joint_names_expr=[jn],
         effort_limit=meta["torque"] * TORQUE_SCALE,
         velocity_limit=meta["vmax"],
         stiffness={jn: meta["kp"] * KP_SCALE},
         damping={jn: meta["kd"] * KD_SCALE},
         armature=meta["arm"],
-        min_delay=0,
-        max_delay=4,
+        #min_delay=0,
+        #max_delay=4,
     )
     for jn, meta in _JOINT_META.items()
 }
@@ -134,7 +141,7 @@ igris_c_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 1.05),
-        #joint_pos=(0,0,0),
+        joint_pos=_INIT_JOINT_POS,
         joint_vel={".*": 0.0},
     ),
     soft_joint_pos_limit_factor=1.0,

@@ -165,7 +165,7 @@ class IGRISRewards(RewardsCfg):
 
     feet_air_time = RewTerm(
         func=mdp.feet_air_time_positive_biped,
-        weight=0.25,
+        weight=0.5,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=IGRIS_FEET_BODIES),
@@ -174,7 +174,7 @@ class IGRISRewards(RewardsCfg):
     )
     feet_slide = RewTerm(
         func=mdp.feet_slide,
-        weight=-0.1,
+        weight=-0.2,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=IGRIS_FEET_BODIES),
             "asset_cfg": SceneEntityCfg("robot", body_names=IGRIS_FEET_BODIES),
@@ -216,7 +216,7 @@ class IGRISRewards(RewardsCfg):
 
     joint_deviation_hip_pitch_knee = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.1,
+        weight=-0.01,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -232,7 +232,7 @@ class IGRISRewards(RewardsCfg):
 
     joint_deviation_ankles = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.5,
+        weight=-0.2,
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -253,7 +253,7 @@ class IGRISRewards(RewardsCfg):
         func=mdp.contact_forces,
         weight=-1.5e-3,
         params={
-            "threshold": 338.0,
+            "threshold": 800.0,
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=IGRIS_FEET_BODIES),
         },
     )
@@ -521,7 +521,7 @@ class IGRISRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.events.base_com = None
 
         # Rewards tuning + make sure torque/acc penalties reference your joints (NOT adult joints)
-        self.rewards.lin_vel_z_l2.weight = 0.0
+        #self.rewards.lin_vel_z_l2.weight = 0.0
         self.rewards.undesired_contacts = None
         self.rewards.flat_orientation_l2.weight = -1.0
         self.rewards.action_rate_l2.weight = -0.05
