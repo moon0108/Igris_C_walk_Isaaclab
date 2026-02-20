@@ -123,7 +123,7 @@ class IgrisCWalkSceneCfg(InteractiveSceneCfg):
                     effort_limit={
                         "Joint_Hip_Yaw_(Left|Right)" : 200,
                         "Joint_Hip_Roll_(Left|Right)" : 200, #200
-                        "Joint_Hip_Pitch_(Left|Right)" : 200,
+                        "Joint_Hip_Pitch_(Left|Right)" : 400,
                         "Joint_Knee_Pitch_(Left|Right)" : 400, #250
                         "Joint_Ankle_Pitch_(Left|Right)" : 50, #120,
                         "Joint_Ankle_Roll_(Left|Right)" : 50, #30,
@@ -169,15 +169,15 @@ class CommandsCfg:
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(3.0, 3.0),
-        rel_standing_envs=0.0,
+        rel_standing_envs=0.2,
         rel_heading_envs=1.0,
         heading_command=False,
         heading_control_stiffness=0.5,
-        debug_vis=False,
+        debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(0.6, 1.0),      # flat에서는 앞으로 걷기 위주로
-            lin_vel_y=(0.0, 0.0),
-            ang_vel_z=(0.0, 0.0),
+            lin_vel_x=(-0.5, 1.0),
+            lin_vel_y=(-0.5, 0.5),
+            ang_vel_z=(-1.0, 1.0),
             heading=(-math.pi, math.pi),
         ),
     )
@@ -530,7 +530,7 @@ class RewardsCfg:
     # Hip Yaw/Roll: 외회전 방지
     joint_deviation_hip_yaw_roll = RewTerm(
         func=mdp.joint_deviation_l1,
-        weight=-0.5,  
+        weight=-0.8,  
         params={
             "asset_cfg": SceneEntityCfg(
                 "robot",
@@ -572,15 +572,17 @@ class RewardsCfg:
     joint_acc_l2 = RewTerm(
         func=mdp.joint_acc_l2,
         weight=-1e-7,  # G1(-1.25e-7)의 2배
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[
-                                                                "Joint_Hip_Yaw_Left",
-                                                                "Joint_Hip_Roll_Left",
-                                                                "Joint_Hip_Pitch_Left",
-                                                                "Joint_Knee_Pitch_Left",
-                                                                "Joint_Hip_Yaw_Right",
-                                                                "Joint_Hip_Roll_Right",
-                                                                "Joint_Hip_Pitch_Right",
-                                                                "Joint_Knee_Pitch_Right",]
+        params={"asset_cfg": 
+                SceneEntityCfg("robot", 
+                               joint_names=[
+                                "Joint_Hip_Yaw_Left",
+                                "Joint_Hip_Roll_Left",
+                                "Joint_Hip_Pitch_Left",
+                                "Joint_Knee_Pitch_Left",
+                                "Joint_Hip_Yaw_Right",
+                                "Joint_Hip_Roll_Right",
+                                "Joint_Hip_Pitch_Right",
+                                "Joint_Knee_Pitch_Right",]
         )},
     )
 
